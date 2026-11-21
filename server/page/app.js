@@ -49,7 +49,10 @@ function copyText(pre) {
       headers: body ? { 'content-type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.status);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw Object.assign(new Error(j.error || res.status), { needAddress: !!j.needAddress });
+    }
     return res.json();
   }
 
@@ -115,9 +118,9 @@ function copyText(pre) {
       `<details data-key="${m.id}:${key}"${openDetails.has(`${m.id}:${key}`) ? ' open' : ''}><summary>${label}</summary>${inner}</details>`;
     const list = updates.length ? det('u', `${updates.length} ${updates.length === 1 ? 'update' : 'updates'}`, `<ul class="items">${updates.map((i) => itemRow(m, i)).join('')}</ul>`) : '';
     const rest = others.length ? det('o', m.os === 'dockge' ? `Other stacks: ${others.length}` : `Held: ${others.length}`, `<ul class="items">${others.map((i) => itemRow(m, i)).join('')}</ul>`) : '';
-    let tools = `<div class="machine-tools"><span class="muted">${esc(m.os)}${m.host ? `, ${esc(m.host)}` : ''}${m.address ? `, ${esc(m.address)}` : ''}</span></div>`;
+    let tools = `<div class="machine-tools"><span class="muted">${esc(m.os)}${m.host ? `, ${esc(m.host)}` : ''}${m.addressName ? `, ${esc(m.addressName)}` : ''}${m.address ? `, ${esc(m.address)}` : ''}</span></div>`;
     if (m.os === 'umbrel') {
-      tools += `<form class="row umbrel-edit" data-m="${m.id}"><input name="url" placeholder="${esc(m.address || 'http://umbrel.local')}" autocomplete="off"><input name="token" type="password" placeholder="MCP token" autocomplete="off"><button class="small plain">Save</button></form>`;
+      tools += `<form class="row umbrel-edit" data-m="${m.id}"><input name="url" placeholder="${esc(m.addressName || m.address || 'Address')}" autocomplete="off"><input name="token" type="password" placeholder="New token" autocomplete="off"><button class="small plain">Save</button></form>`;
       tools += `<div class="machine-tools"><button class="small plain" data-act="check" data-m="${m.id}">Check now</button></div>`;
     }
     if (m.uninstall) tools += `<p class="muted cmd-label">Uninstall</p><pre>${esc(m.uninstall)}</pre>`;
@@ -125,8 +128,30 @@ function copyText(pre) {
     return `<section class="card${quiet ? ' quiet' : ''}" data-id="${m.id}">${head}${needs}${list}${rest}${det('t', 'Machine', tools)}</section>`;
   }
 
+  // Umbrels found on the tailnet, each with its own paste box. Redrawn only when the list changes
+  // and nobody is typing in it.
+  let foundKey = '';
+  function renderFound() {
+    const box = $('#found');
+    const list = state.found || [];
+    const key = list.map((f) => f.ip).join(',');
+    if (key === foundKey || box.contains(document.activeElement)) return;
+    foundKey = key;
+    box.hidden = !list.length;
+    box.innerHTML = list.length
+      ? `<p class="muted">Found on your tailnet: ${list.map((f) => esc(f.name)).join(', ')}</p>` +
+        list
+          .map(
+            (f) =>
+              `<form class="found" data-ip="${esc(f.ip)}" data-name="${esc(f.name)}"><span class="title">${esc(f.name)}</span><div class="row"><textarea name="token" rows="2" placeholder="Paste what its Connect your agent screen shows" autocomplete="off" spellcheck="false"></textarea><button>Add</button></div><p class="err" hidden></p></form>`
+          )
+          .join('')
+      : '';
+  }
+
   function render() {
     if (!state) return;
+    renderFound();
     // Keep what someone is typing on an Umbrel card.
     if (document.activeElement && document.activeElement.closest && document.activeElement.closest('.umbrel-edit')) return;
     $('#machines').innerHTML = state.machines.map(card).join('');
@@ -176,7 +201,10 @@ function copyText(pre) {
       else if (d.act === 'one') await approve(m, d.id);
       else if (d.act === 'askfirst') await api('POST', '/api/ask-first', { id: d.id, on: !!d.on });
       else if (d.act === 'override') await api('POST', `/api/machines/${d.m}/override`, { stack: d.stack, mode: d.mode });
-      else if (d.act === 'check') await api('POST', `/api/machines/${d.m}/check`, {});
+      else if (d.act === 'show-address') {
+        showAddress();
+        return;
+      } else if (d.act === 'check') await api('POST', `/api/machines/${d.m}/check`, {});
       else if (d.act === 'remove') {
         if (!confirm(`Remove ${d.name}?`)) return;
         await api('DELETE', `/api/machines/${d.m}`);
@@ -187,6 +215,27 @@ function copyText(pre) {
       await load();
     } catch (err) {
       alert(err.message);
+    }
+  });
+
+  function showErr(el, err) {
+    el.textContent = err ? err.message : '';
+    el.hidden = !err;
+  }
+
+  document.addEventListener('submit', async (e) => {
+    const found = e.target.closest('form.found');
+    if (!found) return;
+    e.preventDefault();
+    const err = found.querySelector('.err');
+    try {
+      await api('POST', '/api/umbrels', { url: found.dataset.ip, name: found.dataset.name, token: found.token.value });
+      showErr(err, null);
+      foundKey = '';
+      document.activeElement.blur();
+      await load();
+    } catch (x) {
+      showErr(err, x);
     }
   });
 
@@ -205,10 +254,24 @@ function copyText(pre) {
   });
 
   const addForm = $('#add-form');
-  function showCatch() {
-    $('#add-catch').textContent = CATCHES[addForm.os.value] || '';
-    $('#umbrel-form').hidden = addForm.os.value !== 'umbrel';
+  function showAddress() {
+    const u = $('#umbrel-form');
+    u.url.hidden = false;
+    u.querySelector('[data-act="show-address"]').hidden = true;
+    u.url.focus();
   }
+  function showCatch() {
+    const umbrel = addForm.os.value === 'umbrel';
+    $('#add-catch').textContent = CATCHES[addForm.os.value] || '';
+    $('#umbrel-form').hidden = !umbrel;
+    // An Umbrel's name comes from what is pasted.
+    addForm.name.hidden = umbrel;
+    showErr($('#add-err'), null);
+  }
+  $('#umbrel-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    addForm.requestSubmit();
+  });
   addForm.os.addEventListener('change', showCatch);
   showCatch();
 
@@ -219,8 +282,10 @@ function copyText(pre) {
     try {
       if (os === 'umbrel') {
         const u = $('#umbrel-form');
-        await api('POST', '/api/umbrels', { name: addForm.name.value || u.url.value.replace(/^https?:\/\//, ''), url: u.url.value, token: u.token.value });
+        await api('POST', '/api/umbrels', { url: u.url.value, token: u.token.value });
         u.reset();
+        u.url.hidden = true;
+        u.querySelector('[data-act="show-address"]').hidden = false;
         out.hidden = true;
       } else {
         const r = await api('POST', '/api/joins', { os, name: addForm.name.value });
@@ -228,9 +293,12 @@ function copyText(pre) {
         out.hidden = false;
       }
       addForm.name.value = '';
+      showErr($('#add-err'), null);
       await load();
     } catch (err) {
-      alert(err.message);
+      if (os !== 'umbrel') return alert(err.message);
+      showErr($('#add-err'), err);
+      if (err.needAddress) showAddress();
     }
   });
 

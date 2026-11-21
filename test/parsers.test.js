@@ -84,3 +84,9 @@ test('dockge: Go and JS agree', { skip }, () => {
     fs.rmSync(dir, { recursive: true });
   }
 });
+
+test('tailscale status: the Go agent sends what the server tests assume', { skip }, async () => {
+  const { TAILNET } = await import('../server/test/helpers.js');
+  const { readTailnet } = await import('../server/umbrel/discover.js');
+  assert.deepEqual(readTailnet(goParse('tailscale', 'mac/tailscale-status.json')), readTailnet(TAILNET));
+});

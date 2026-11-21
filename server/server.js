@@ -16,6 +16,11 @@ const app = createApp({
 const timer = setInterval(() => app.checkAllUmbrels().catch(() => {}), 30 * 60 * 1000);
 timer.unref();
 app.checkAllUmbrels().catch(() => {});
+// Umbrels on the tailnet that are not cards yet: every 30 minutes, and when a report brings a
+// changed tailnet.
+const finder = setInterval(() => app.findUmbrels().catch(() => {}), 30 * 60 * 1000);
+finder.unref();
+app.findUmbrels().catch(() => {});
 const server = http.createServer(app.handle);
 server.listen(port, host, () => console.log(`fleet-updates listening on ${host}:${server.address().port}`));
 for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => server.close(() => process.exit(0)));

@@ -36,8 +36,21 @@ Content (JSON; NIP-44 encrypted to the dashboard inbox key in v2):
   "applied": [{ "at": "...", "how": "click|overnight", "channel": "...", "name": "...",
                 "from": "...", "to": "...", "status": "installed", "message": "" }],
   "last_counter": 4,
-  "uninstall": true }
+  "uninstall": true,
+  "tailnet": { "self":  { "names": ["Example MacBook", "mbp"], "ips": ["100.64.0.21"], "online": true },
+               "peers": [{ "names": ["axial"], "ips": ["100.64.0.17"], "online": true }] } }
 ```
+
+`tailnet` is optional: agents that find a Tailscale CLI (`tailscale`, on the Mac also
+`/Applications/Tailscale.app/Contents/MacOS/Tailscale`, on Windows `tailscale.exe` under Program
+Files) send what `tailscale status --json` says while Tailscale is running. Each node: `names` = its
+HostName and the first label of its DNSName (no `localhost`), `ips` = its 100.64.0.0/10 addresses
+only. No CLI, or Tailscale not running: the field is left out, never an error. It is part of the
+signed content like everything else; reports without it (older agents) are accepted. The dashboard
+keeps each machine's latest one, resolves Umbrel names from the merged map (DNS label first, then
+HostName, online nodes first; then normal DNS, loopback counting as not found), and probes the online
+peers that are not Umbrel cards yet (`GET http://<100.x>/mcp`, no token, 3 s, 4 at a time, every
+30 min and when a report brings a changed tailnet) for umbrelOS's 401.
 
 `report_hash` = sha256 of `[1, os, rows]` where rows are `[channel, name, current, latest]` for each
 item, sorted. Flags that change minute to minute (an app running) are not in it.

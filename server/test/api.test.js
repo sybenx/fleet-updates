@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startServer, call, approve, tmpDir } from './helpers.js';
+import { startServer, call, approve, tmpDir, TAILNET, readHttp } from './helpers.js';
 import { itemId, newSecretKey, publicKey, reportTemplate, signEvent } from '../protocol.js';
 import { createUmbrelAdapter } from '../umbrel/adapter.js';
 
@@ -287,7 +287,9 @@ function fakeUmbrel({ appsAfterUpdate, failure, sse = false } = {}) {
   return { fetch, calls };
 }
 
-const umbrelWith = (fake) => ({ app: { umbrel: createUmbrelAdapter({ fetch: fake.fetch, pollMs: 0, sleep: async () => {} }) } });
+// Names the tailnet does not know fall back to DNS; here every name is 100.64.5.5.
+const fakeLookup = async () => ({ address: '100.64.5.5', family: 4 });
+const umbrelWith = (fake) => ({ app: { umbrel: createUmbrelAdapter({ fetch: fake.fetch, pollMs: 0, sleep: async () => {} }), lookup: fakeLookup } });
 
 test('Umbrel card: app and umbrelOS updates from MCP; token kept server side only', async () => {
   const fake = fakeUmbrel({ sse: true });
@@ -297,11 +299,12 @@ test('Umbrel card: app and umbrelOS updates from MCP; token kept server side onl
     await s.app.idle();
     const st = (await call(s.url, 'GET', '/api/state')).json;
     const m = st.machines[0];
-    assert.equal(m.address, 'http://xumbrel.local');
+    assert.equal(m.address, 'http://100.64.5.5');
+    assert.equal(m.addressName, 'xumbrel');
     assert.deepEqual(m.items.map((i) => i.name), ['lubelogger', 'keykin-box', 'umbrelos']);
     assert.ok(m.needs.some((n) => n.text === 'umbrelOS 2.0.2, restarts the Umbrel'));
     assert.ok(!JSON.stringify(st).includes('secret-token-123'));
-    assert.equal(fake.calls[0].url, 'http://xumbrel.local/mcp');
+    assert.equal(fake.calls[0].url, 'http://100.64.5.5/mcp');
     assert.equal(fake.calls[0].auth, 'Bearer secret-token-123');
     assert.equal((await call(s.url, 'POST', `/api/machines/${m.id}/draft`, {})).status, 409);
     // Update all leaves umbrelOS out.
@@ -354,7 +357,7 @@ test('Umbrel: a refused token shows on the card without the token', () =>
       const m = (await call(s.url, 'GET', '/api/state')).json.machines[0];
       assert.equal(m.needs[0].text, 'Not reachable: token refused');
     },
-    { app: { umbrel: createUmbrelAdapter({ fetch: async () => new Response('', { status: 401 }), pollMs: 0, sleep: async () => {} }) } }
+    { app: { umbrel: createUmbrelAdapter({ fetch: async () => new Response('', { status: 401 }), pollMs: 0, sleep: async () => {} }), lookup: fakeLookup } }
   ));
 
 test('Umbrel card: accepts what Umbrel\'s Connect your agent screen shows', async () => {
@@ -372,4 +375,109 @@ test('Umbrel card: accepts what Umbrel\'s Connect your agent screen shows', asyn
     assert.equal(r.status, 400);
     assert.match(r.text, /umbrelmcp_/);
   });
+});
+
+// ---- tailnet names and found Umbrels ----
+
+test('Umbrel by name: resolved through the tailnet an agent reported; stored by IP, shown by name', async () => {
+  const fake = fakeUmbrel();
+  await withServer(async (s) => {
+    const mac = await joinMachine(s, 'mac', 'Mac');
+    // Before any agent reports a tailnet, a name is not found; the error says what to do.
+    let r = await call(s.url, 'POST', '/api/umbrels', { url: 'axial', token: 'umbrelmcp_0123456789abcdef' });
+    assert.equal(r.status, 400);
+    assert.equal(r.json.error, 'Could not find axial. Use its Tailscale IP (tailscale ip axial), or join a machine that runs Tailscale first.');
+    assert.equal(r.json.needAddress, true);
+    assert.equal((await sendReport(s, mac, { tailnet: TAILNET })).status, 200);
+    for (const [url, n] of [['axial', 1], ['http://axial/mcp', 2], ['AXIAL.local', 3], ['https://axial.example-tailnet.ts.net/', 4]]) {
+      r = await call(s.url, 'POST', '/api/umbrels', { url, token: 'umbrelmcp_0123456789abcdef' });
+      assert.equal(r.status, 200, r.text);
+      assert.equal(r.json.machine.name, 'axial');
+      const m = (await call(s.url, 'GET', '/api/state')).json.machines.filter((x) => x.os === 'umbrel');
+      assert.equal(m.length, n);
+      assert.equal(m[n - 1].address, url.startsWith('https') ? 'https://100.64.0.17' : 'http://100.64.0.17');
+      assert.equal(m[n - 1].addressName, 'axial');
+    }
+    await s.app.idle();
+    assert.equal(fake.calls[0].url, 'http://100.64.0.17/mcp');
+    // An IP on the tailnet gets its peer name.
+    r = await call(s.url, 'POST', '/api/umbrels', { url: '100.64.0.18', token: 'umbrelmcp_0123456789abcdef' });
+    assert.equal(r.json.machine.name, 'ambrel');
+    // A name DNS turns into loopback is this container, not the Umbrel.
+    r = await call(s.url, 'POST', '/api/umbrels', { url: 'nas', token: 'umbrelmcp_0123456789abcdef' });
+    assert.match(r.json.error, /^Could not find nas\. /);
+    r = await call(s.url, 'POST', '/api/umbrels', { url: 'http://127.0.0.1/mcp', token: 'umbrelmcp_0123456789abcdef' });
+    assert.equal(r.status, 400);
+    r = await call(s.url, 'POST', '/api/umbrels', { url: 'ftp://axial', token: 'umbrelmcp_0123456789abcdef' });
+    assert.match(r.json.error, /does not look right/);
+    // A report without the section (an old agent) is still accepted and the names go with it.
+    assert.equal((await sendReport(s, mac, {}, nowS(s) + 1)).status, 200);
+    r = await call(s.url, 'POST', '/api/umbrels', { url: 'axial', token: 'umbrelmcp_0123456789abcdef' });
+    assert.equal(r.status, 400);
+  }, { app: { umbrel: createUmbrelAdapter({ fetch: fake.fetch, pollMs: 0, sleep: async () => {} }), lookup: async (h) => ({ address: h === 'nas' ? '127.0.1.1' : '127.0.0.1' }) } });
+});
+
+test('Umbrel: the "send your agent this message" text alone is enough', async () => {
+  const fake = fakeUmbrel();
+  await withServer(async (s) => {
+    const mac = await joinMachine(s, 'mac', 'Mac');
+    await sendReport(s, mac, { tailnet: TAILNET });
+    const text = read('umbrel/agent-message.txt');
+    const r = await call(s.url, 'POST', '/api/umbrels', { token: text });
+    assert.equal(r.status, 200, r.text);
+    assert.equal(r.json.machine.name, 'axial');
+    await s.app.idle();
+    assert.equal(fake.calls[0].url, 'http://100.64.0.17/mcp');
+    assert.equal(fake.calls[0].auth, 'Bearer umbrelmcp_fake0123456789abcdefFAKE');
+    const m = (await call(s.url, 'GET', '/api/state')).json.machines.find((x) => x.os === 'umbrel');
+    assert.ok(m.items.length > 0);
+    assert.ok(!JSON.stringify((await call(s.url, 'GET', '/api/state')).json).includes('umbrelmcp_'));
+    // The same text with an address typed in: the typed address wins.
+    const r2 = await call(s.url, 'POST', '/api/umbrels', { url: '100.64.0.18', token: text });
+    assert.equal(r2.json.machine.name, 'ambrel');
+    // Nothing pasted, or nothing usable.
+    assert.equal((await call(s.url, 'POST', '/api/umbrels', { token: '' })).status, 400);
+    const noAddr = await call(s.url, 'POST', '/api/umbrels', { token: 'umbrelmcp_0123456789abcdef' });
+    assert.equal(noAddr.json.needAddress, true);
+  }, umbrelWith(fake));
+});
+
+test('found on the tailnet: probes peers, lists Umbrels that are not cards yet', async () => {
+  const r401 = readHttp('umbrel/mcp-401.txt');
+  const probed = [];
+  // axial and ambrel answer like the recorded Umbrel; the rest do not.
+  const probeFetch = async (url) => {
+    probed.push(url);
+    if (/100\.64\.0\.1[78]\//.test(url)) return new Response(r401.body, { status: 401, headers: r401.headers });
+    return new Response('<html>', { status: 200 });
+  };
+  const { probeUmbrel } = await import('../umbrel/discover.js');
+  const fake = fakeUmbrel();
+  await withServer(async (s) => {
+    const mac = await joinMachine(s, 'mac', 'Mac');
+    await sendReport(s, mac, { tailnet: TAILNET });
+    await new Promise((r) => setImmediate(r));
+    await s.app.findUmbrels();
+    // Offline peers are not probed; only 100.x addresses, /mcp, no token.
+    assert.ok(probed.every((u) => /^http:\/\/100\.64\.0\.\d+\/mcp$/.test(u)));
+    assert.ok(!probed.includes('http://100.64.0.11/mcp'));
+    let st = (await call(s.url, 'GET', '/api/state')).json;
+    assert.deepEqual(st.found, [{ ip: '100.64.0.18', name: 'ambrel' }, { ip: '100.64.0.17', name: 'axial' }]);
+    // Adding one takes it off the list at once.
+    const r = await call(s.url, 'POST', '/api/umbrels', { url: '100.64.0.17', name: 'axial', token: 'Authorization: Bearer umbrelmcp_0123456789abcdef' });
+    assert.equal(r.status, 200);
+    st = (await call(s.url, 'GET', '/api/state')).json;
+    assert.deepEqual(st.found, [{ ip: '100.64.0.18', name: 'ambrel' }]);
+    // The next round does not probe what is already a card.
+    probed.length = 0;
+    await s.app.findUmbrels();
+    assert.ok(!probed.includes('http://100.64.0.17/mcp'));
+    assert.ok(probed.includes('http://100.64.0.18/mcp'));
+    // An unchanged tailnet (online flips only) does not start a round.
+    probed.length = 0;
+    await sendReport(s, mac, { tailnet: { ...TAILNET, peers: TAILNET.peers.map((p) => ({ ...p })) } }, nowS(s) + 1);
+    await new Promise((r) => setImmediate(r));
+    await s.app.idle();
+    assert.equal(probed.length, 0);
+  }, { app: { umbrel: createUmbrelAdapter({ fetch: fake.fetch, pollMs: 0, sleep: async () => {} }), probe: (ip) => probeUmbrel(ip, { fetch: probeFetch }) } });
 });

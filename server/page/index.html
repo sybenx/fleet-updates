@@ -29,6 +29,7 @@
 
   <section class="block">
     <h2>Add machine</h2>
+    <div id="found" hidden></div>
     <form id="add-form" class="row">
       <input name="name" placeholder="Name (optional)" autocomplete="off">
       <select name="os">
@@ -39,10 +40,12 @@
         <option value="umbrel">Umbrel</option>
       </select>
     </form>
-    <form id="umbrel-form" class="row" hidden>
-      <input name="url" placeholder="Tailscale address, http://100.x.x.x" autocomplete="off">
-      <input name="token" placeholder="Token, or paste the whole block" autocomplete="off" type="password">
+    <form id="umbrel-form" class="paste" hidden>
+      <textarea name="token" rows="3" placeholder="Paste what the Umbrel's Connect your agent screen shows" autocomplete="off" spellcheck="false"></textarea>
+      <input name="url" placeholder="Address, for example axial or 100.97.142.86" autocomplete="off" hidden>
+      <button type="button" class="link" data-act="show-address">address</button>
     </form>
+    <p class="err" id="add-err" hidden></p>
     <div class="row"><button form="add-form" id="add-button">Add machine</button><span class="muted catch" id="add-catch"></span></div>
     <div id="added" hidden></div>
   </section>

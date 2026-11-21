@@ -1,0 +1,269 @@
+{
+  "Version": "1.104.5",
+  "TUN": true,
+  "BackendState": "Running",
+  "HaveNodeKey": true,
+  "AuthURL": "",
+  "TailscaleIPs": [
+    "100.64.0.21",
+    "fd7a:115c:a1e0::15"
+  ],
+  "Self": {
+    "ID": "nFAKE0021CNTRL",
+    "PublicKey": "nodekey:761e2938979585286903b8780fcb965ebf7c0fb3d6be92511c08a52763fb6fc7",
+    "HostName": "Example MacBook",
+    "DNSName": "mbp.example-tailnet.ts.net.",
+    "OS": "macOS",
+    "UserID": 1021,
+    "TailscaleIPs": [
+      "100.64.0.21",
+      "fd7a:115c:a1e0::15"
+    ],
+    "AllowedIPs": [
+      "100.64.0.21/32",
+      "fd7a:115c:a1e0::15/128"
+    ],
+    "Addrs": null,
+    "Relay": "xyz",
+    "Online": true,
+    "ExitNode": false,
+    "Active": false,
+    "InNetworkMap": true
+  },
+  "MagicDNSSuffix": "example-tailnet.ts.net",
+  "CurrentTailnet": {
+    "Name": "example.github",
+    "MagicDNSSuffix": "example-tailnet.ts.net",
+    "MagicDNSEnabled": true
+  },
+  "Peer": {
+    "nodekey:6e7885c10204a44f73d7fafa26f1cd27b2d98a190baec40740eee6745fbffe69": {
+      "ID": "nFAKE0011CNTRL",
+      "PublicKey": "nodekey:6e7885c10204a44f73d7fafa26f1cd27b2d98a190baec40740eee6745fbffe69",
+      "HostName": "steamdeck",
+      "DNSName": "steamdeck-white.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1011,
+      "TailscaleIPs": [
+        "100.64.0.11",
+        "fd7a:115c:a1e0::b"
+      ],
+      "AllowedIPs": [
+        "100.64.0.11/32",
+        "fd7a:115c:a1e0::b/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": false,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:1aa5e8c63d57c1aeba42e9ab803471e02218319249990576838016b939818dd8": {
+      "ID": "nFAKE0012CNTRL",
+      "PublicKey": "nodekey:1aa5e8c63d57c1aeba42e9ab803471e02218319249990576838016b939818dd8",
+      "HostName": "Took",
+      "DNSName": "took.example-tailnet.ts.net.",
+      "OS": "windows",
+      "UserID": 1012,
+      "TailscaleIPs": [
+        "100.64.0.12",
+        "fd7a:115c:a1e0::c"
+      ],
+      "AllowedIPs": [
+        "100.64.0.12/32",
+        "fd7a:115c:a1e0::c/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:09f1758c0cecaa6be5436a5d88ff81921ff11a4d8b714ac61063155d642527a6": {
+      "ID": "nFAKE0013CNTRL",
+      "PublicKey": "nodekey:09f1758c0cecaa6be5436a5d88ff81921ff11a4d8b714ac61063155d642527a6",
+      "HostName": "xumbrel",
+      "DNSName": "xumbrel.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1013,
+      "TailscaleIPs": [
+        "100.64.0.13",
+        "fd7a:115c:a1e0::d"
+      ],
+      "AllowedIPs": [
+        "100.64.0.13/32",
+        "fd7a:115c:a1e0::d/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:108fcd9fbe650bb9d96c742d02e756ff87fffdc065c7db2191195eda605b10d6": {
+      "ID": "nFAKE0014CNTRL",
+      "PublicKey": "nodekey:108fcd9fbe650bb9d96c742d02e756ff87fffdc065c7db2191195eda605b10d6",
+      "HostName": "pve",
+      "DNSName": "pve.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1014,
+      "TailscaleIPs": [
+        "100.64.0.14",
+        "fd7a:115c:a1e0::e"
+      ],
+      "AllowedIPs": [
+        "100.64.0.14/32",
+        "fd7a:115c:a1e0::e/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:d9a5f881ac953c7719cab92d36191f6a97aa633de987edc417257fabb5ea7357": {
+      "ID": "nFAKE0015CNTRL",
+      "PublicKey": "nodekey:d9a5f881ac953c7719cab92d36191f6a97aa633de987edc417257fabb5ea7357",
+      "HostName": "localhost",
+      "DNSName": "google-pixel-7a.example-tailnet.ts.net.",
+      "OS": "android",
+      "UserID": 1015,
+      "TailscaleIPs": [
+        "100.64.0.15",
+        "fd7a:115c:a1e0::f"
+      ],
+      "AllowedIPs": [
+        "100.64.0.15/32",
+        "fd7a:115c:a1e0::f/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": false,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:7b00ff4a96dcf2b4c752758eaa4c52893e575a296f928a7b5eda41dac1debc5e": {
+      "ID": "nFAKE0016CNTRL",
+      "PublicKey": "nodekey:7b00ff4a96dcf2b4c752758eaa4c52893e575a296f928a7b5eda41dac1debc5e",
+      "HostName": "localhost",
+      "DNSName": "ipad-129.example-tailnet.ts.net.",
+      "OS": "iOS",
+      "UserID": 1016,
+      "TailscaleIPs": [
+        "100.64.0.16",
+        "fd7a:115c:a1e0::10"
+      ],
+      "AllowedIPs": [
+        "100.64.0.16/32",
+        "fd7a:115c:a1e0::10/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": false,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:20d9bb8e882723c80e9e1f88375fd8654927b6ca21c31ae4ebd6e40ca562ade6": {
+      "ID": "nFAKE0017CNTRL",
+      "PublicKey": "nodekey:20d9bb8e882723c80e9e1f88375fd8654927b6ca21c31ae4ebd6e40ca562ade6",
+      "HostName": "axial",
+      "DNSName": "axial.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1017,
+      "TailscaleIPs": [
+        "100.64.0.17",
+        "fd7a:115c:a1e0::11"
+      ],
+      "AllowedIPs": [
+        "100.64.0.17/32",
+        "fd7a:115c:a1e0::11/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:d080ed36c01926d4a7c8cfb30eb0f5e96388cd869b6b13222eeb7807557037df": {
+      "ID": "nFAKE0018CNTRL",
+      "PublicKey": "nodekey:d080ed36c01926d4a7c8cfb30eb0f5e96388cd869b6b13222eeb7807557037df",
+      "HostName": "ambrel",
+      "DNSName": "ambrel.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1018,
+      "TailscaleIPs": [
+        "100.64.0.18",
+        "fd7a:115c:a1e0::12"
+      ],
+      "AllowedIPs": [
+        "100.64.0.18/32",
+        "fd7a:115c:a1e0::12/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:35409e4193694fba0e998a6fbdd565b1b75865d80cd626faaaa4cbed22d07c38": {
+      "ID": "nFAKE0019CNTRL",
+      "PublicKey": "nodekey:35409e4193694fba0e998a6fbdd565b1b75865d80cd626faaaa4cbed22d07c38",
+      "HostName": "steamdeck",
+      "DNSName": "steamdeck.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1019,
+      "TailscaleIPs": [
+        "100.64.0.19",
+        "fd7a:115c:a1e0::13"
+      ],
+      "AllowedIPs": [
+        "100.64.0.19/32",
+        "fd7a:115c:a1e0::13/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": false,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    },
+    "nodekey:9c9eb0d9434bb62d08a80832932178001566a1e1168a22f35ad5693119601fb2": {
+      "ID": "nFAKE0020CNTRL",
+      "PublicKey": "nodekey:9c9eb0d9434bb62d08a80832932178001566a1e1168a22f35ad5693119601fb2",
+      "HostName": "vps-8e6f2b1",
+      "DNSName": "vps.example-tailnet.ts.net.",
+      "OS": "linux",
+      "UserID": 1020,
+      "TailscaleIPs": [
+        "100.64.0.20",
+        "fd7a:115c:a1e0::14"
+      ],
+      "AllowedIPs": [
+        "100.64.0.20/32",
+        "fd7a:115c:a1e0::14/128"
+      ],
+      "Addrs": null,
+      "Relay": "xyz",
+      "Online": true,
+      "ExitNode": false,
+      "Active": false,
+      "InNetworkMap": true
+    }
+  },
+  "User": {
+    "1011": {
+      "ID": 1011,
+      "LoginName": "owner@example.com",
+      "DisplayName": "Example Owner",
+      "ProfilePicURL": ""
+    }
+  }
+}

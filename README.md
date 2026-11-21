@@ -23,11 +23,17 @@ and sets up the timer. Each card shows its uninstall command under **Machine**.
 | Linux, SteamOS, bazzite (x86_64) | Terminal, as the desktop user | systemd user timer, every 10 min | System flatpaks need one sudo step for polkit; the installer prints it. `rpm-ostree` is a badge only |
 | Windows (Took) | PowerShell, Run as administrator | Scheduled Task, every 10 min and at startup, Below Normal | Needs admin once |
 | Dockge (xumbrel, axial) | Dockge: + Compose, name `fleet-agent`, paste the snippet, Deploy | the container polls every minute | Needs the `fleet-dockge-agent` image built |
-| Umbrel (xumbrel, axial, ambrel) | nothing: enter its address and MCP token on the card | the server checks every 30 min | Updates are clicks only |
+| Umbrel (xumbrel, axial, ambrel) | nothing: paste what its Connect your agent screen shows | the server checks every 30 min | Updates are clicks only |
 
 Mac and Linux commands look like
 `curl -fsSL 'http://<dashboard>:7480/install/mac?t=<join>' | FLEET_APPROVER=<key> sh`, Windows
 `$env:FLEET_APPROVER='<key>'; irm 'http://<dashboard>:7480/install/windows?t=<join>' | iex`.
+
+Umbrels: paste the endpoint block or the "send your agent this message" text; the name comes from
+the link in it (`http://axial/mcp`). The dashboard's container cannot resolve tailnet names, so it
+uses the tailnet the agents report (see `PROTOCOL.md`); with no agent on Tailscale yet, open
+**address** and use the Tailscale IP. Umbrels on the tailnet that are not cards yet show under
+**Found on your tailnet**, each with its own paste box.
 
 ## Rules
 

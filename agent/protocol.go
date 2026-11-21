@@ -97,6 +97,8 @@ type ReportContent struct {
 	Applied     []Applied `json:"applied"`
 	LastCounter int64     `json:"last_counter"`
 	Uninstall   bool      `json:"uninstall,omitempty"`
+	// Optional, signed like the rest of the content. Left out when there is no Tailscale.
+	Tailnet *Tailnet `json:"tailnet,omitempty"`
 }
 
 func ReportEvent(machineID string, c ReportContent, createdAt int64, sk string) (*Event, error) {

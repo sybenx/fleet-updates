@@ -1,0 +1,11 @@
+HTTP/1.1 401 Unauthorized
+content-security-policy: img-src * blob: data:;connect-src 'self' https://apps.umbrel.com;default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';object-src 'none';script-src-attr 'none';style-src 'self' https: 'unsafe-inline'
+referrer-policy: no-referrer
+www-authenticate: Bearer
+content-type: application/json; charset=utf-8
+content-length: 76
+etag: W/"4c-qMAtz4tDjU5Eupw6k4HTOkiq+do"
+date: Sat, 21 Nov 2026 23:43:25 GMT
+connection: close
+
+{"jsonrpc":"2.0","error":{"code":-32001,"message":"Unauthorized"},"id":null}

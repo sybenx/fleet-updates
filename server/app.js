@@ -7,6 +7,7 @@ import { APPROVAL_TTL_S, acceptApproval, approvalFields, approvalTemplate, itemI
 import { actionable, inUpdateAll, itemKey, matchesAskFirst, needsList, stackPinned } from './policy.js';
 import { createSigner } from './signer.js';
 import { createUmbrelAdapter } from './umbrel/adapter.js';
+import { isLoopback, normalizeAddress, probeAll, probeUmbrel, readTailnet, resolveName, tailnetKey, tailnetMap } from './umbrel/discover.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const AGENT_OSES = ['mac', 'windows', 'linux', 'dockge'];
@@ -39,9 +40,10 @@ const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const newId = (n = 8) => crypto.randomBytes(n).toString('hex');
 
 class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, extra = {}) {
     super(message);
     this.status = status;
+    this.extra = extra;
   }
 }
 
@@ -54,6 +56,8 @@ export function createApp({
   umbrel = createUmbrelAdapter(),
   devSigner = false,
   approverPubkey = '',
+  probe = probeUmbrel, // (ip) -> does it look like an Umbrel? Tests pass a stand-in.
+  lookup = undefined, // DNS lookup for Umbrel names the tailnet does not know
 } = {}) {
   const store = openStore(dataDir);
   const S = () => store.state;
@@ -137,7 +141,10 @@ export function createApp({
   }
 
   function newMachine(name, os) {
-    const machine = { id: newId(4), name, os, pubkey: '', createdAt: iso(), lastSeen: null, items: [], badges: [], lastResults: {}, overrides: {}, approval: null, approvalCounter: 0 };
+    // An all-digit id would be an integer key and jump ahead of older machines in Object.values.
+    let id = newId(4);
+    while (/^\d+$/.test(id)) id = newId(4);
+    const machine = { id, name, os, pubkey: '', createdAt: iso(), lastSeen: null, items: [], badges: [], lastResults: {}, overrides: {}, approval: null, approvalCounter: 0 };
     S().machines[machine.id] = machine;
     return machine;
   }
@@ -194,6 +201,13 @@ export function createApp({
     machine.reportCreatedAt = ev.created_at;
     machine.lastSeen = iso();
     machine.lastCounter = Number(p.last_counter) || 0;
+    // The tailnet as this machine sees it (optional; older agents and machines without Tailscale
+    // leave it out, and then it is gone from here too).
+    const before = tailnetKey(machine.tailnet);
+    const tn = readTailnet(p.tailnet);
+    if (tn) machine.tailnet = tn;
+    else delete machine.tailnet;
+    if (tailnetKey(tn) !== before && tn) setImmediate(() => findUmbrels().catch(() => {}));
     // What the machine says it applied, logged once each.
     machine.logged ||= [];
     const seen = new Set(machine.logged);
@@ -264,32 +278,120 @@ export function createApp({
 
   // ---- Umbrels: the server talks to them itself; there is no agent ----
 
-  // Accepts what Umbrel's "Connect your agent" screen shows: the bare token, the
-  // "Authorization: Bearer ..." line, or the whole block (address and header). The address may
-  // end in /mcp.
-  function umbrelConfig(body) {
-    const pasted = String(body.token || '');
-    let url = String(body.url || '').trim();
-    if (!url) url = (pasted.match(/https?:\/\/[^\s"']+/) || [''])[0];
-    url = url.replace(/\/+$/, '').replace(/\/mcp$/, '');
-    if (url && !/^https?:\/\/[\w.:[\]-]+$/.test(url)) throw new HttpError(400, 'That address does not look right. Use http:// and the Umbrel\'s Tailscale IP, for example http://100.101.146.83');
-    let token = pasted.trim();
-    const bearer = token.match(/Bearer\s+(\S+)/i);
-    if (bearer) token = bearer[1];
-    token = token.replace(/[.\u2026]+$/, '');
-    if (token && !/^[\x21-\x7e]{8,4096}$/.test(token)) throw new HttpError(400, 'Paste the token from the Umbrel\'s Connect your agent screen (it starts with umbrelmcp_).');
-    return { url, token };
+  // ---- tailnet names and found Umbrels ----
+
+  const currentMap = () => tailnetMap(Object.values(S().machines).map((m) => m.tailnet));
+  const firstLabel = (host) => String(host).toLowerCase().replace(/\.$/, '').split('.')[0];
+  const BAD_ADDRESS = 'That address does not look right. Use the Umbrel\'s name or Tailscale IP, for example axial or 100.97.142.86.';
+  const notFound = (name) => new HttpError(400, `Could not find ${name}. Use its Tailscale IP (tailscale ip ${name}), or join a machine that runs Tailscale first.`, { needAddress: true });
+
+  // The Umbrel's address from what was pasted: the first link that points at /mcp, else the first
+  // link that is an Umbrel base address. "send your agent this message" text may hold several.
+  function addressInPaste(pasted) {
+    const links = pasted.match(/https?:\/\/[^\s"'<>`)\]]+/gi) || [];
+    const ok = [];
+    for (const l of links) {
+      try {
+        const a = normalizeAddress(l.replace(/[.,;:]+$/, ''));
+        if (a) ok.push([/\/mcp(\/|$)/i.test(l), a]);
+      } catch {}
+    }
+    return (ok.find(([mcp]) => mcp) || ok[0] || [])[1] || null;
   }
 
-  function createUmbrel(body) {
-    const cfg = umbrelConfig(body);
-    if (!cfg.url || !cfg.token) throw new HttpError(400, 'Fill in the address and the token.');
-    const name = (String(body.name || '').trim() || cfg.url.replace(/^https?:\/\//, '')).slice(0, 60);
+  // The token from what was pasted: an umbrelmcp_ token anywhere, the "Authorization: Bearer ..."
+  // line, or the bare token.
+  function tokenInPaste(pasted) {
+    const t = pasted.trim();
+    if (!t) return '';
+    const um = t.match(/umbrelmcp_[A-Za-z0-9_-]+/);
+    if (um) return um[0];
+    const bearer = t.match(/Bearer\s+([^\s<>"'`]+)/i);
+    let token = bearer ? bearer[1] : t;
+    token = token.replace(/[.,;…]+$/, '');
+    if (!/^[\x21-\x7e]{8,4096}$/.test(token)) throw new HttpError(400, 'Paste the token from the Umbrel\'s Connect your agent screen (it starts with umbrelmcp_).');
+    return token;
+  }
+
+  // Accepts what Umbrel's "Connect your agent" screen shows (the address and header block, or the
+  // "send your agent this message" text) and an address in any form. Names are resolved through
+  // the tailnet the agents report, then DNS. -> { url (by IP when it was a name), host, token, name }
+  async function umbrelConfig(body) {
+    const pasted = String(body.token || '');
+    let addr = null;
+    try {
+      addr = normalizeAddress(body.url);
+    } catch {
+      throw new HttpError(400, BAD_ADDRESS, { needAddress: true });
+    }
+    if (!addr) addr = addressInPaste(pasted);
+    const token = tokenInPaste(pasted);
+    if (!addr) return { url: '', host: '', token, name: '' };
+    const map = currentMap();
+    const u = new URL(addr.url);
+    let ip = addr.host;
+    let host = '';
+    if (addr.isName) {
+      host = firstLabel(addr.host);
+      ip = await resolveName(addr.host, map, lookup);
+      if (!ip) throw notFound(host);
+    } else if (isLoopback(ip)) throw notFound(ip);
+    const ipHost = ip.includes(':') ? `[${ip}]` : ip;
+    const url = `${u.protocol}//${ipHost}${u.port ? `:${u.port}` : ''}`;
+    return { url, host, token, name: host || map.byIp.get(ip) || ip };
+  }
+
+  async function createUmbrel(body) {
+    const cfg = await umbrelConfig(body);
+    if (!cfg.url && !cfg.token) throw new HttpError(400, 'Paste what the Umbrel\'s Connect your agent screen shows.');
+    if (!cfg.url) throw new HttpError(400, 'No address in what was pasted. Add the Umbrel\'s name or Tailscale IP.', { needAddress: true });
+    if (!cfg.token) throw new HttpError(400, 'No token in what was pasted. Paste the whole block from the Umbrel\'s Connect your agent screen.');
+    const name = (String(body.name || '').trim() || cfg.name).slice(0, 60);
     const machine = newMachine(name, 'umbrel');
-    machine.umbrel = cfg;
+    machine.umbrel = { url: cfg.url, token: cfg.token, host: cfg.host };
     store.save();
     checkUmbrel(machine.id).catch(() => {});
     return { machine: { id: machine.id, name, os: 'umbrel' } };
+  }
+
+  // Tailnet peers that answer /mcp like an Umbrel and are not a card yet.
+  function umbrelCardKeys() {
+    const ips = new Set();
+    const names = new Set();
+    for (const m of Object.values(S().machines)) {
+      if (m.os !== 'umbrel' || !m.umbrel) continue;
+      try {
+        ips.add(new URL(m.umbrel.url).hostname.replace(/^\[|\]$/g, ''));
+      } catch {}
+      if (m.umbrel.host) names.add(m.umbrel.host.toLowerCase());
+      names.add(String(m.name).toLowerCase());
+    }
+    return { ips, names };
+  }
+
+  function foundView() {
+    const { ips, names } = umbrelCardKeys();
+    return (S().found || []).filter((f) => !ips.has(f.ip) && !names.has(String(f.name).toLowerCase())).map((f) => ({ ip: f.ip, name: f.name }));
+  }
+
+  let finding = null;
+  function findUmbrels() {
+    if (finding) return finding;
+    finding = (async () => {
+      const tailnets = Object.values(S().machines).map((m) => m.tailnet).filter(Boolean);
+      if (!tailnets.length) return;
+      const map = tailnetMap(tailnets);
+      const online = new Set();
+      for (const t of tailnets) for (const n of [t.self, ...t.peers]) if (n && n.online) online.add(n.ips[0]);
+      const { ips } = umbrelCardKeys();
+      const candidates = [...map.byIp.keys()].filter((ip) => online.has(ip) && !ips.has(ip));
+      const hits = await probeAll(candidates, { probe: (ip) => probe(ip) });
+      S().found = hits.map((ip) => ({ ip, name: map.byIp.get(ip) || ip, at: iso() })).sort((a, b) => a.name.localeCompare(b.name));
+      store.save();
+    })().finally(() => {
+      finding = null;
+    });
+    return finding;
   }
 
   const umbrelBusy = new Map();
@@ -416,6 +518,7 @@ export function createApp({
           os: m.os,
           host: m.host || '',
           address: m.umbrel ? m.umbrel.url : '',
+          addressName: m.umbrel ? m.umbrel.host || '' : '',
           createdAt: m.createdAt,
           lastSeen: m.lastSeen || null,
           pending: items.filter((i) => i.actionable).length,
@@ -425,7 +528,7 @@ export function createApp({
           needs: needsList(m),
         };
       });
-    return { machines, askFirst: st.askFirst, log: st.log.slice(-300).reverse(), signer: { mode: signer.mode, pubkey: signer.pubkey } };
+    return { machines, found: foundView(), askFirst: st.askFirst, log: st.log.slice(-300).reverse(), signer: { mode: signer.mode, pubkey: signer.pubkey } };
   }
 
   function setAskFirst(body) {
@@ -528,7 +631,7 @@ export function createApp({
       // The page. Behind the Umbrel login.
       if (p === '/api/state' && m === 'GET') return send(res, 200, view(req));
       if (p === '/api/joins' && m === 'POST') return send(res, 200, createJoin(await jsonBody(req), req));
-      if (p === '/api/umbrels' && m === 'POST') return send(res, 200, createUmbrel(await jsonBody(req)));
+      if (p === '/api/umbrels' && m === 'POST') return send(res, 200, await createUmbrel(await jsonBody(req)));
       if (p === '/api/ask-first' && m === 'POST') return send(res, 200, setAskFirst(await jsonBody(req)));
       if (p === '/api/dev/sign' && m === 'POST') {
         if (!signer.sign) throw new HttpError(404, 'no dev signer');
@@ -553,8 +656,8 @@ export function createApp({
         if (a[2] === 'override' && m === 'POST') return send(res, 200, setOverride(machine, await jsonBody(req)));
         if (a[2] === 'umbrel' && m === 'POST') {
           if (machine.os !== 'umbrel') throw new HttpError(409, 'not an Umbrel');
-          const cfg = umbrelConfig(await jsonBody(req));
-          machine.umbrel = { url: cfg.url || machine.umbrel.url, token: cfg.token || machine.umbrel.token };
+          const cfg = await umbrelConfig(await jsonBody(req));
+          machine.umbrel = cfg.url ? { url: cfg.url, token: cfg.token || machine.umbrel.token, host: cfg.host } : { ...machine.umbrel, token: cfg.token || machine.umbrel.token };
           store.save();
           await checkUmbrel(machine.id);
           return send(res, 200, { ok: true });
@@ -567,13 +670,13 @@ export function createApp({
       }
       throw new HttpError(404, 'not found');
     } catch (e) {
-      if (e instanceof HttpError) return send(res, e.status, { error: e.message });
+      if (e instanceof HttpError) return send(res, e.status, { error: e.message, ...e.extra });
       console.error(e);
       return send(res, 500, { error: 'server error' });
     }
   }
 
-  return { handle, store, signer, checkUmbrel, checkAllUmbrels, idle: () => Promise.all([...umbrelBusy.values()]) };
+  return { handle, store, signer, checkUmbrel, checkAllUmbrels, findUmbrels, idle: () => Promise.all([...umbrelBusy.values(), finding || Promise.resolve()]) };
 }
 
 export { tag };

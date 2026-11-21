@@ -33,7 +33,7 @@ import (
 	"time"
 )
 
-var version = "0.1.2"
+var version = "0.1.3"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -335,7 +335,7 @@ func runOnce(dir, osName string, o runOpts) error {
 		st.Items, st.Badges = e.Collect(st)
 		st.CheckedAt = now
 	}
-	rep, err := ReportEvent(st.MachineID, ReportContent{OS: osName, Host: hostname(), Items: st.Items, Badges: st.Badges, Applied: st.Applied, LastCounter: st.LastCounter}, e.Now().Unix(), st.SecretKey)
+	rep, err := ReportEvent(st.MachineID, ReportContent{OS: osName, Host: hostname(), Items: st.Items, Badges: st.Badges, Applied: st.Applied, LastCounter: st.LastCounter, Tailnet: e.Tailnet()}, e.Now().Unix(), st.SecretKey)
 	if err != nil {
 		return err
 	}
@@ -441,6 +441,8 @@ func cmdParse(args []string) error {
 		out = ParseRpmOstree(read(0))
 	case "dockge":
 		out = ParseDockge(read(0), read(1))
+	case "tailscale":
+		out = ParseTailscaleStatus(read(0))
 	default:
 		return errors.New("unknown kind")
 	}

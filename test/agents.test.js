@@ -109,6 +109,25 @@ test('Mac: Go-signed report is accepted; an approval signed by the server applie
     assert.deepEqual(r.out.match(/would run: .*/g), ['would run: brew upgrade --formula jq']);
   }));
 
+test('Mac: the report carries the tailnet (signed); the dashboard resolves an Umbrel name from it', { skip }, async () => {
+  const s = await startServer({ app: { umbrel: { check: async () => ({ items: [], badges: [] }) } } });
+  try {
+    const a = await joinAgent(s, 'mac', { FLEET_FIXTURE_DIR: path.join(fx, 'mac'), FLEET_DRY_RUN: '1', FLEET_HOUR: '12' });
+    const r = await run(['run'], a.env);
+    assert.equal(r.code, 0, r.err);
+    const u = await call(s.url, 'POST', '/api/umbrels', { token: 'http://axial/mcp\nAuthorization: Bearer umbrelmcp_0123456789abcdef' });
+    assert.equal(u.status, 200, u.text);
+    const m = (await call(s.url, 'GET', '/api/state')).json.machines.find((x) => x.os === 'umbrel');
+    assert.deepEqual([m.name, m.address], ['axial', 'http://100.64.0.17']);
+    // An agent without Tailscale (no fixture here) sends no section and is accepted all the same.
+    const l = await joinAgent(s, 'linux', { FLEET_FIXTURE_DIR: path.join(fx, 'linux'), FLEET_DRY_RUN: '1', FLEET_HOUR: '12' });
+    assert.equal((await run(['run'], l.env)).code, 0);
+    assert.ok((await machine(s, l.id)).lastSeen);
+  } finally {
+    await s.close();
+  }
+});
+
 test('Mac: approvals that do not fit are not used (changed report, expired, unknown signer)', { skip }, () =>
   withServer(async (s) => {
     const fix = tmpDir();

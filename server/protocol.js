@@ -86,11 +86,14 @@ export function reportHash(os, items) {
 
 // Report content (JSON in `content`; NIP-44 encrypted in v2):
 //   { v, os, host, items: [{ channel, name, title, current, latest, flags }], badges: [...],
-//     applied: [{ at, how, channel, name, from, to, status, message }], last_counter, uninstall? }
+//     applied: [{ at, how, channel, name, from, to, status, message }], last_counter, uninstall?,
+//     tailnet? }   tailnet (optional): { self: node, peers: [node] }, node = { names, ips, online }
+//                  from `tailscale status --json`, 100.x addresses only. Old agents leave it out.
 // Tags: ["d", machine id], ["report", report hash]. Signed by the machine's own key.
-export function reportTemplate({ machineId, os, host = '', items = [], badges = [], applied = [], lastCounter = 0, createdAt, uninstall = false }) {
+export function reportTemplate({ machineId, os, host = '', items = [], badges = [], applied = [], lastCounter = 0, createdAt, uninstall = false, tailnet = null }) {
   const body = { v: VERSION, os, host, items, badges, applied, last_counter: lastCounter };
   if (uninstall) body.uninstall = true; // the machine is leaving: take its card off
+  if (tailnet) body.tailnet = tailnet;
   const content = JSON.stringify(body);
   return { kind: REPORT_KIND, created_at: createdAt, tags: [['d', machineId], ['report', reportHash(os, items)]], content };
 }

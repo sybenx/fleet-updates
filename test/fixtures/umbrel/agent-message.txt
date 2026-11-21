@@ -1,0 +1,6 @@
+Connect to my Umbrel over MCP.
+
+Endpoint: http://axial/mcp
+Header: Authorization: Bearer umbrelmcp_fake0123456789abcdefFAKE
+
+This server controls the owner account on this umbrelOS device. Read-only system information, the installed app list, and the machine (virtual machine) list are always available. App control access: all installed apps. File access: /Home, /External, and /Network. File contents transfer over HTTP, never through tool results. Download URL: http://axial/mcp/files/download?path=/Home/file.bin. Download example: curl -H "Authorization: Bearer <your token>" "http://axial/mcp/files/download?path=/Home/file.bin" -o file.bin. Upload URL: http://axial/mcp/files/upload?path=/Home/file.bin. Upload example: curl -H "Authorization: Bearer <your token>" --data-binary @file.bin "http://axial/mcp/files/upload?path=/Home/file.bin".
