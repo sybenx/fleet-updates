@@ -1,0 +1,2 @@
+explorer	C:\Windows\explorer.exe	C:\Windows\Explorer.EXE
+java	C:\Program Files\Eclipse Adoptium\jdk-21\bin\java.exe	java -Xmx8G -jar velocity.jar

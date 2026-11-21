@@ -1,0 +1,3 @@
+org.mozilla.firefox	stable	120.0
+com.valvesoftware.Steam	stable	1.0.0.80
+io.github.foo	stable	1

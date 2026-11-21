@@ -1,0 +1,4 @@
+#!/bin/sh
+# Stand-in for brew in the agent tests: logs each call, installs nothing.
+echo "$*" >>"${FAKE_BREW_LOG:?}"
+exit 0

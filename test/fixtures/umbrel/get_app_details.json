@@ -1,0 +1,12 @@
+{
+  "id": "lubelogger",
+  "name": "LubeLogger",
+  "version": "1.7.4",
+  "state": "ready",
+  "progress": 0,
+  "url": "http://xumbrel.local:8835",
+  "settings": {
+    "storage": { "serviceImages": { "app": "ghcr.io/hargata/lubelogger:v1.7.4@sha256:483a9d7582c4e6258615fd822b3de4193b4fcc4230d0a92432c6d407faf75af2" } },
+    "environment": { "serviceImages": { "app": "ghcr.io/hargata/lubelogger:v1.7.4@sha256:483a9d7582c4e6258615fd822b3de4193b4fcc4230d0a92432c6d407faf75af2" } }
+  }
+}

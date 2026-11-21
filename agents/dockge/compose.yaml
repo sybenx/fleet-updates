@@ -1,0 +1,17 @@
+# Fleet Updates agent for this Dockge. In Dockge: + Compose, name it fleet-agent, paste, Deploy.
+# The mounts are as Dockge's own engine sees them: on Umbrel's Dockge app the engine socket is
+# /data/docker.sock and the stacks are at /opt/stacks. The join token works once, within an hour.
+services:
+  agent:
+    image: ghcr.io/sybenx/fleet-dockge-agent:0.1.0
+    restart: unless-stopped
+    environment:
+      FLEET_URL: "__FLEET_URL__"
+      FLEET_JOIN: "__FLEET_JOIN__"
+      FLEET_APPROVER: "__FLEET_APPROVER__"
+      FLEET_STACKS_DIR: /opt/stacks
+      FLEET_STATE_DIR: /state
+    volumes:
+      - /data/docker.sock:/var/run/docker.sock
+      - /opt/stacks:/opt/stacks:ro
+      - ./state:/state

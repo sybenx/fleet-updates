@@ -1,0 +1,10 @@
+[Unit]
+Description=Fleet Updates agent
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/share/fleet-agent/fleet-agent run
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=2h

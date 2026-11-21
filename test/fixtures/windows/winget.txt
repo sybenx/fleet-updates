@@ -1,0 +1,14 @@
+   -    \    | Name                                   Id                               Version        Available      Source
+--------------------------------------------------------------------------------------------------------------
+Discord                                Discord.Discord                  1.0.9001       1.0.9002       winget
+Microsoft Edge WebView2 Runtime        Microsoft.EdgeWebView2Runtime    130.0.2849.80  131.0.2903.51  winget
+Eclipse Temurin JDK with Hotspot 21.0… EclipseAdoptium.Temurin.21.JDK   21.0.4.7       21.0.5.11      winget
+7-Zip 23.01 (x64)                      7zip.7zip                        < 23.01        24.08          winget
+Steam                                  Valve.Steam                      2.10.91.91     3.0            winget
+5 upgrades available.
+
+The following packages have an upgrade available, but require explicit targeting for upgrade:
+Name    Id             Version  Available Source
+-------------------------------------------------
+Spotify Spotify.Spotify 1.2.40  1.2.50    winget
+1 package(s) have version numbers that cannot be determined. Use --include-unknown to see all results.

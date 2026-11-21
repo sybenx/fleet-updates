@@ -1,0 +1,4 @@
+{"deployments": [
+  {"id": "bazzite-1", "version": "43.20261120", "booted": false, "staged": true},
+  {"id": "bazzite-0", "version": "43.20261110", "booted": true, "staged": false}
+], "cached-update": {"version": "43.20261120"}, "transaction": null}

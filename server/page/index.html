@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Updates</title>
+<link rel="icon" href="/icon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <h1>Updates</h1>
+  <div id="machines"></div>
+
+  <section class="block">
+    <h2>Log</h2>
+    <ul id="log" class="log"></ul>
+  </section>
+
+  <section class="block">
+    <h2>Ask first</h2>
+    <ul id="askfirst" class="plain"></ul>
+    <form id="askfirst-form" class="row">
+      <input name="id" placeholder="winget Id, * at the end for a prefix" autocomplete="off" required>
+      <button>Add</button>
+    </form>
+  </section>
+
+  <section class="block">
+    <h2>Add machine</h2>
+    <form id="add-form" class="row">
+      <input name="name" placeholder="Name (optional)" autocomplete="off">
+      <select name="os">
+        <option value="mac">Mac</option>
+        <option value="windows">Windows</option>
+        <option value="linux">Linux, SteamOS, bazzite</option>
+        <option value="dockge">Dockge</option>
+        <option value="umbrel">Umbrel</option>
+      </select>
+    </form>
+    <form id="umbrel-form" class="row" hidden>
+      <input name="url" placeholder="http://xumbrel.local" autocomplete="off">
+      <input name="token" placeholder="MCP token" autocomplete="off" type="password">
+    </form>
+    <div class="row"><button form="add-form" id="add-button">Add machine</button><span class="muted catch" id="add-catch"></span></div>
+    <div id="added" hidden></div>
+  </section>
+</main>
+<script src="/signer.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

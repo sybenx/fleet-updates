@@ -1,0 +1,13 @@
+Warning: some casks have auto updates and are skipped.
+{
+  "formulae": [
+    {"name": "jq", "installed_versions": ["1.7"], "current_version": "1.7.1", "pinned": false, "pinned_version": null},
+    {"name": "node@20", "installed_versions": ["20.10.0"], "current_version": "20.18.0", "pinned": true, "pinned_version": "20.10.0"}
+  ],
+  "casks": [
+    {"name": "firefox", "installed_versions": ["120.0"], "current_version": "121.0"},
+    {"name": "discord", "installed_versions": ["0.0.300"], "current_version": "0.0.301"},
+    {"name": "zoom", "installed_versions": ["6.0.0"], "current_version": "6.1.0"},
+    {"name": "newapp", "installed_versions": ["1.0"], "current_version": "2.0"}
+  ]
+}

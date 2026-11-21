@@ -1,0 +1,2 @@
+2026-11 Cumulative Update for Windows 11 Version 24H2 for x64-based Systems (KB5046617)
+Security Intelligence Update for Microsoft Defender Antivirus - KB2267602

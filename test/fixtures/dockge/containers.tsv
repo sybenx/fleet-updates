@@ -1,0 +1,10 @@
+dozzle	c1	dozzle	amir20/dozzle:latest	img1	running
+chronicle	c2	relay	ghcr.io/sybenx/chronicle:sha-fc4319c@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd	img2	running
+ditto-relay	c3	ditto	ditto:2.5	img3	running
+media-helpers	c4	helpers	python:3-alpine	img4	running
+tube-agent	c5	agent	tube-agent:latest	img5	running
+nv2	c6	redis	redis:7-alpine	img6	running
+nv2	c7	app	ghcr.io/example/nv2:latest	img7	running
+rustdesk-api	c8	api	lejianwen/rustdesk-api:latest	img8	running
+miniflux	c9	miniflux	miniflux/miniflux:latest	img9	running
+miniflux	c10	db	postgres:17	img10	running

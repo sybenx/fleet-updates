@@ -1,0 +1,7 @@
+[
+  { "id": "dockge", "name": "Dockge", "version": "1.5.0-2", "state": "ready", "progress": 0, "updateAvailable": false },
+  { "id": "lubelogger", "name": "LubeLogger", "version": "1.7.4", "state": "ready", "progress": 0, "updateAvailable": true },
+  { "id": "keykin-box", "name": "Keykin Box", "version": "0.1.24", "state": "ready", "progress": 0, "updateAvailable": true },
+  { "id": "keykin-login", "name": "Keykin Login", "version": "0.1.23", "state": "ready", "progress": 0, "updateAvailable": false },
+  { "id": "bitcoin-knots", "name": "Bitcoin Knots", "version": "1.2.13", "state": "stopped", "progress": 0, "updateAvailable": false, "implements": ["bitcoin"] }
+]

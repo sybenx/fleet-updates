@@ -1,0 +1,116 @@
+{
+ "approver": "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+ "other": "5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc",
+ "now": 1795000000,
+ "items": [
+  {
+   "channel": "brew-formula",
+   "name": "jq",
+   "current": "1.7",
+   "latest": "1.7.1"
+  },
+  {
+   "channel": "brew-cask",
+   "name": "firefox",
+   "current": "120.0",
+   "latest": "121.0"
+  },
+  {
+   "channel": "winget",
+   "name": "7zip.7zip",
+   "current": "< 23.01",
+   "latest": "24.08"
+  },
+  {
+   "channel": "flatpak-user",
+   "name": "org.mozilla.firefox//stable",
+   "current": "",
+   "latest": "121.0"
+  }
+ ],
+ "report_hash": "57699f3d27861dd4bec36bb0112be93204edc24cca99156d8098206318f65dcd",
+ "item_ids": {
+  "brew-formula|jq": "38267fd0b35e",
+  "brew-cask|firefox": "3fe90d09acc3",
+  "winget|7zip.7zip": "08538fed3332",
+  "flatpak-user|org.mozilla.firefox//stable": "e60ada5e6fc4"
+ },
+ "approval": {
+  "pubkey": "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+  "created_at": 1795000000,
+  "kind": 31747,
+  "tags": [
+   [
+    "d",
+    "abcd1234"
+   ],
+   [
+    "report",
+    "57699f3d27861dd4bec36bb0112be93204edc24cca99156d8098206318f65dcd"
+   ],
+   [
+    "counter",
+    "5"
+   ],
+   [
+    "expiration",
+    "1795003600"
+   ],
+   [
+    "only",
+    "38267fd0b35e"
+   ],
+   [
+    "override",
+    "dozzle",
+    "compare"
+   ],
+   [
+    "ask_first",
+    "Valve.Steam"
+   ]
+  ],
+  "content": "",
+  "id": "eb6f1732ca1d20e64bc4ac9d2f9b3f4362866d9e0c2bc249e552dc241652ab94",
+  "sig": "fefd60e11abf845baa6dd45e63ec8dba26b8af2bc4a1265e56145fee3304bc3d0f2aabe21e1878fa05f35e2c8a91de7f7fb6dac82c94dc1d8747cf1d3af9e327"
+ },
+ "approval_by_other": {
+  "pubkey": "5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc",
+  "created_at": 1795000000,
+  "kind": 31747,
+  "tags": [
+   [
+    "d",
+    "abcd1234"
+   ],
+   [
+    "report",
+    "57699f3d27861dd4bec36bb0112be93204edc24cca99156d8098206318f65dcd"
+   ],
+   [
+    "counter",
+    "6"
+   ],
+   [
+    "expiration",
+    "1795003600"
+   ]
+  ],
+  "content": "",
+  "id": "c3fd2d1e8336d9248d9ea11c94cb0060c853dfd505b2b4f3634510f38adfd183",
+  "sig": "d67fc6e30e0125a8c90894fff40812125a82b4bc2f98285e893a7dd9395d8fa9257bccc09831776a79ea4b6a6b336e979e9c3f3f4179fd3d86fe98ab1bb91127"
+ },
+ "odd_event": {
+  "pubkey": "f9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9",
+  "created_at": 1795000000,
+  "kind": 1,
+  "tags": [
+   [
+    "t",
+    "a \"b\" \\ c"
+   ]
+  ],
+  "content": "line\nnext\ttab \u0001 é ü 😀 </script>",
+  "id": "a403755cd8e92feaeac2f6d98c91b94c1923675135802ca957adc1a147eaa087"
+ }
+}

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Stand-in for docker in the Dockge agent tests. Reads $FAKE_DOCKER_DIR/*.tsv and logs calls.
+D=${FAKE_DOCKER_DIR:?}
+echo "$*" >>"$D/calls.log"
+case "$1" in
+  ps) proj=${4#label=com.docker.compose.project=}; awk -F '\t' -v p="$proj" '$1 == p { print $2 }' "$D/containers.tsv" ;;
+  inspect) awk -F '\t' -v id="$4" '$2 == id { print $3 "\t" $4 "\t" $5 "\t" $6 }' "$D/containers.tsv" ;;
+  image) awk -F '\t' -v id="$5" '$1 == id { print $2 }' "$D/images.tsv" ;;
+  buildx)
+    dg=$(awk -F '\t' -v r="$4" '$1 == r { print $2 }' "$D/registry.tsv")
+    if [ -n "$dg" ]; then printf 'Name:      %s\nMediaType: application/vnd.oci.image.index.v1+json\nDigest:    %s\n' "$4" "$dg"
+    else echo "ERROR: $4: not found" >&2; exit 1; fi ;;
+  compose) echo "compose $* in $(pwd)" >>"$D/compose.log" ;;
+  *) echo "fake docker: $*" >&2; exit 1 ;;
+esac

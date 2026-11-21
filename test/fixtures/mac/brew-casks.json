@@ -1,0 +1,10 @@
+{
+  "formulae": [],
+  "casks": [
+    {"token": "firefox", "name": ["Mozilla Firefox"], "artifacts": [{"uninstall": [{"quit": "org.mozilla.firefox"}]}, {"app": ["Firefox.app"]}, {"zap": [{"trash": ["~/Library/Caches/Firefox"]}]}]},
+    {"token": "discord", "name": ["Discord"], "artifacts": [{"app": ["Discord.app"]}]},
+    {"token": "zoom", "name": ["Zoom"], "artifacts": [{"pkg": ["zoomusInstallerFull.pkg"]}, {"uninstall": [{"pkgutil": "us.zoom.pkg.videomeeting"}]}]},
+    {"token": "newapp", "name": ["New App"], "artifacts": [{"app": ["New App.app"]}]},
+    {"token": "rectangle", "name": ["Rectangle"], "artifacts": [{"app": ["Rectangle.app"]}]}
+  ]
+}

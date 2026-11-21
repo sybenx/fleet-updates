@@ -1,0 +1,52 @@
+# Builds the two images and pushes them to GitHub's registry when a version tag is pushed.
+#   ghcr.io/<owner>/fleet-updates:<version>        the dashboard, with the agent binaries it hands out
+#   ghcr.io/<owner>/fleet-dockge-agent:<version>   the agent in Dockge mode
+name: images
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - uses: actions/setup-go@v5
+        with: { go-version-file: agent/go.mod }
+      - run: cd agent && go vet ./... && go test ./...
+      # No npm dependencies (noble is vendored). The Node tests build the agent with Go.
+      - run: npm test
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { name: fleet-updates, file: deploy/Dockerfile }
+          - { name: fleet-dockge-agent, file: deploy/Dockerfile.dockge-agent }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
