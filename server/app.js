@@ -264,19 +264,27 @@ export function createApp({
 
   // ---- Umbrels: the server talks to them itself; there is no agent ----
 
+  // Accepts what Umbrel's "Connect your agent" screen shows: the bare token, the
+  // "Authorization: Bearer ..." line, or the whole block (address and header). The address may
+  // end in /mcp.
   function umbrelConfig(body) {
-    const url = String(body.url || '').trim().replace(/\/+$/, '');
-    if (url && !/^https?:\/\/[\w.:[\]-]+$/.test(url)) throw new HttpError(400, 'address');
-    const token = String(body.token || '').trim();
-    if (token && !/^[\x21-\x7e]{8,4096}$/.test(token)) throw new HttpError(400, 'token');
+    const pasted = String(body.token || '');
+    let url = String(body.url || '').trim();
+    if (!url) url = (pasted.match(/https?:\/\/[^\s"']+/) || [''])[0];
+    url = url.replace(/\/+$/, '').replace(/\/mcp$/, '');
+    if (url && !/^https?:\/\/[\w.:[\]-]+$/.test(url)) throw new HttpError(400, 'That address does not look right. Use http:// and the Umbrel\'s Tailscale IP, for example http://100.101.146.83');
+    let token = pasted.trim();
+    const bearer = token.match(/Bearer\s+(\S+)/i);
+    if (bearer) token = bearer[1];
+    token = token.replace(/[.\u2026]+$/, '');
+    if (token && !/^[\x21-\x7e]{8,4096}$/.test(token)) throw new HttpError(400, 'Paste the token from the Umbrel\'s Connect your agent screen (it starts with umbrelmcp_).');
     return { url, token };
   }
 
   function createUmbrel(body) {
-    const name = String(body.name || '').trim().slice(0, 60);
-    if (!name) throw new HttpError(400, 'name');
     const cfg = umbrelConfig(body);
-    if (!cfg.url || !cfg.token) throw new HttpError(400, 'address and token');
+    if (!cfg.url || !cfg.token) throw new HttpError(400, 'Fill in the address and the token.');
+    const name = (String(body.name || '').trim() || cfg.url.replace(/^https?:\/\//, '')).slice(0, 60);
     const machine = newMachine(name, 'umbrel');
     machine.umbrel = cfg;
     store.save();

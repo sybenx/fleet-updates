@@ -356,3 +356,20 @@ test('Umbrel: a refused token shows on the card without the token', () =>
     },
     { app: { umbrel: createUmbrelAdapter({ fetch: async () => new Response('', { status: 401 }), pollMs: 0, sleep: async () => {} }) } }
   ));
+
+test('Umbrel card: accepts what Umbrel\'s Connect your agent screen shows', async () => {
+  await withServer(async (s) => {
+    // The whole "Any other AI agent" block pasted into the token field, no address, no name.
+    const block = 'http://100.101.146.83/mcp\nAuthorization: Bearer umbrelmcp_cf03abcdef0123456789';
+    let r = await call(s.url, 'POST', '/api/umbrels', { token: block });
+    assert.equal(r.status, 200);
+    assert.equal(r.json.machine.name, '100.101.146.83');
+    // Just the header line, with an address that ends in /mcp.
+    r = await call(s.url, 'POST', '/api/umbrels', { name: 'axial', url: 'http://100.97.142.86/mcp', token: 'Authorization: Bearer umbrelmcp_0123456789abcdef' });
+    assert.equal(r.status, 200);
+    // A token with a space in it still gets a readable error.
+    r = await call(s.url, 'POST', '/api/umbrels', { name: 'x', url: 'http://100.1.2.3', token: 'not a token' });
+    assert.equal(r.status, 400);
+    assert.match(r.text, /umbrelmcp_/);
+  });
+});
