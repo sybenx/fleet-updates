@@ -1,4 +1,35 @@
 'use strict';
+
+// The page is usually served over plain http on the LAN, where navigator.clipboard does not exist
+// (it needs https or localhost). Fall back to selecting the text and execCommand('copy').
+function copyText(pre) {
+  const text = pre.textContent;
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(pre);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    return true;
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 (() => {
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -150,8 +181,7 @@
         if (!confirm(`Remove ${d.name}?`)) return;
         await api('DELETE', `/api/machines/${d.m}`);
       } else if (d.act === 'copy') {
-        await navigator.clipboard.writeText(b.parentElement.querySelector('pre').textContent);
-        b.textContent = 'Copied';
+        b.textContent = copyText(b.parentElement.querySelector('pre')) ? 'Copied' : 'Select and copy';
         return;
       }
       await load();
